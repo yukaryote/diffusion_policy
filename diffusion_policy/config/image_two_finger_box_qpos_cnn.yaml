@@ -1,0 +1,47 @@
+defaults:
+  - image_two_finger_box_cnn_common
+  
+policy:
+  shape_meta:
+    action:
+      shape:
+      - 4
+    obs:
+      agent_pos:
+        shape:
+        - 12
+        type: low_dim
+      image:
+        shape:
+        - 3
+        - 256
+        - 256
+        type: rgb
+task:
+  dataset:
+    _target_: diffusion_policy.dataset.two_finger_image_dataset.TwoFingerImageDataset
+    zarr_path: data/two_finger/shadow_finger_box_qpos.zarr
+  env_runner:
+    _target_: diffusion_policy.env_runner.two_finger_image_runner.TwoFingerImageRunner
+    state_type: qpos
+  image_shape:
+  - 3
+  - 256
+  - 256
+  name: two_finger_box_qpos
+  shape_meta:
+    action:
+      shape:
+      - 4
+    obs:
+      agent_pos:
+        shape:
+        - 12
+        type: low_dim
+      image:
+        shape:
+        - 3
+        - 256
+        - 256
+        type: rgb
+task_name: two_finger_box_qpos

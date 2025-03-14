@@ -1,0 +1,39 @@
+defaults:
+  - image_two_finger_box_cnn_common
+  
+policy:
+  shape_meta:
+    action:
+      shape:
+      - 4
+    obs:
+      image:
+        shape:
+        - 3
+        - 256
+        - 256
+        type: rgb
+task:
+  dataset:
+    _target_: diffusion_policy.dataset.two_finger_image_dataset.TwoFingerImageDataset
+    zarr_path: data/two_finger/shadow_finger_box_qvel.zarr
+  env_runner:
+    _target_: diffusion_policy.env_runner.two_finger_image_runner.TwoFingerImageRunner
+    state_type: stateless
+  image_shape:
+  - 3
+  - 256
+  - 256
+  name: two_finger_box_stateless
+  shape_meta:
+    action:
+      shape:
+      - 4
+    obs:
+      image:
+        shape:
+        - 3
+        - 256
+        - 256
+        type: rgb
+task_name: two_finger_box_stateless

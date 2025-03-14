@@ -1,5 +1,5 @@
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import numpy as np
 from collections import defaultdict, deque
 import dill
@@ -85,10 +85,18 @@ class MultiStepWrapper(gym.Wrapper):
         self.reward = list()
         self.done = list()
         self.info = defaultdict(lambda : deque(maxlen=n_obs_steps+1))
-    
-    def reset(self):
+
+    def seed(self, seed=None):
+        if seed is None:
+            seed = np.random.randint(0,25536)
+        self._seed = seed
+        self.np_random = np.random.default_rng(seed)
+
+    def reset(self, **kwargs):
         """Resets the environment using kwargs."""
-        obs = super().reset()
+        obs = super().reset(**kwargs)
+        if type(obs) == tuple:
+            obs, info = obs
 
         self.obs = deque([obs], maxlen=self.n_obs_steps+1)
         self.reward = list()
@@ -96,7 +104,7 @@ class MultiStepWrapper(gym.Wrapper):
         self.info = defaultdict(lambda : deque(maxlen=self.n_obs_steps+1))
 
         obs = self._get_obs(self.n_obs_steps)
-        return obs
+        return obs, {}
 
     def step(self, action):
         """
@@ -106,22 +114,22 @@ class MultiStepWrapper(gym.Wrapper):
             if len(self.done) > 0 and self.done[-1]:
                 # termination
                 break
-            observation, reward, done, info = super().step(act)
+            observation, reward, terminated, truncated, info = super().step(act)
 
             self.obs.append(observation)
             self.reward.append(reward)
             if (self.max_episode_steps is not None) \
                 and (len(self.reward) >= self.max_episode_steps):
                 # truncation
-                done = True
-            self.done.append(done)
+                terminated = True
+            self.done.append(terminated)
             self._add_info(info)
 
         observation = self._get_obs(self.n_obs_steps)
         reward = aggregate(self.reward, self.reward_agg_method)
-        done = aggregate(self.done, 'max')
+        terminated = aggregate(self.done, 'max')
         info = dict_take_last_n(self.info, self.n_obs_steps)
-        return observation, reward, done, info
+        return observation, reward, terminated, truncated, info
 
     def _get_obs(self, n_steps=1):
         """

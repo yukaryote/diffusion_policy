@@ -1,12 +1,14 @@
+defaults:
+  - _self_
 _target_: diffusion_policy.workspace.train_diffusion_unet_hybrid_workspace.TrainDiffusionUnetHybridWorkspace
 checkpoint:
   save_last_ckpt: true
   save_last_snapshot: false
   topk:
-    format_str: epoch={epoch:04d}-test_mean_score={test_mean_score:.3f}.ckpt
+    format_str: epoch={epoch:04d}-val_loss={val_loss:.3f}.ckpt
     k: 5
     mode: max
-    monitor_key: test_mean_score
+    monitor_key: val_loss
 dataloader:
   batch_size: 64
   num_workers: 8
@@ -28,16 +30,16 @@ logging:
   group: null
   id: null
   mode: online
-  name: 2023.01.16-20.20.06_train_diffusion_unet_hybrid_pusht_image
-  project: diffusion_policy_debug
+  name: ${now:%Y.%m.%d}_${now:%H.%M.%S}_${name}_${task_name}
+  project: scene-jacobian-discovery
   resume: true
   tags:
   - train_diffusion_unet_hybrid
-  - pusht_image
+  - two_finger_box_qpos
   - default
 multi_run:
-  run_dir: data/outputs/2023.01.16/20.20.06_train_diffusion_unet_hybrid_pusht_image
-  wandb_name_base: 2023.01.16-20.20.06_train_diffusion_unet_hybrid_pusht_image
+  run_dir: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
+  wandb_name_base: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
 n_action_steps: 8
 n_latency_steps: 0
 n_obs_steps: 2
@@ -84,81 +86,69 @@ policy:
   shape_meta:
     action:
       shape:
-      - 2
+      - 4
     obs:
       agent_pos:
         shape:
-        - 2
+        - 12
         type: low_dim
       image:
         shape:
         - 3
-        - 96
-        - 96
+        - 256
+        - 256
         type: rgb
-shape_meta:
-  action:
-    shape:
-    - 2
-  obs:
-    agent_pos:
-      shape:
-      - 2
-      type: low_dim
-    image:
-      shape:
-      - 3
-      - 96
-      - 96
-      type: rgb
 task:
   dataset:
-    _target_: diffusion_policy.dataset.pusht_image_dataset.PushTImageDataset
+    _target_: diffusion_policy.dataset.two_finger_image_dataset.TwoFingerImageDataset
     horizon: 16
     max_train_episodes: 90
     pad_after: 7
     pad_before: 1
     seed: 42
     val_ratio: 0.02
-    zarr_path: data/pusht/pusht_cchi_v7_replay.zarr
+    zarr_path: data/two_finger/shadow_finger_box_qpos.zarr
   env_runner:
-    _target_: diffusion_policy.env_runner.pusht_image_runner.PushTImageRunner
+    # call_env_runner: true
+    _target_: diffusion_policy.env_runner.two_finger_image_runner.TwoFingerImageRunner
+    state_type: qpos
     fps: 10
     legacy_test: true
     max_steps: 300
     n_action_steps: 8
     n_envs: null
     n_obs_steps: 2
-    n_test: 50
+    n_test: 2
     n_test_vis: 4
-    n_train: 6
+    n_train: 2
     n_train_vis: 2
     past_action: false
     test_start_seed: 100000
     train_start_seed: 0
   image_shape:
   - 3
-  - 96
-  - 96
-  name: pusht_image
+  - 256
+  - 256
+  name: two_finger_box_qpos
   shape_meta:
     action:
       shape:
-      - 2
+      - 4
     obs:
       agent_pos:
         shape:
-        - 2
+        - 12
         type: low_dim
       image:
         shape:
         - 3
-        - 96
-        - 96
+        - 256
+        - 256
         type: rgb
-task_name: pusht_image
+task_name: two_finger_box_qpos
 training:
-  checkpoint_every: 50
+  num_epochs: 8
+  checkpoint_every: 2
   debug: false
   device: cuda:0
   gradient_accumulate_every: 1
@@ -166,10 +156,9 @@ training:
   lr_warmup_steps: 500
   max_train_steps: null
   max_val_steps: null
-  num_epochs: 3050
   resume: true
-  rollout_every: 50
-  sample_every: 5
+  rollout_every: 1
+  sample_every: 1
   seed: 42
   tqdm_interval_sec: 1.0
   use_ema: true

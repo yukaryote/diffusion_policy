@@ -28,16 +28,16 @@ logging:
   group: null
   id: null
   mode: online
-  name: ${now:%Y.%m.%d}_${now:%H.%M.%S}_${name}_${task_name}
-  project: scene-jacobian-discovery
+  name: 2023.01.16-20.20.06_train_diffusion_unet_hybrid_pusht_image
+  project: diffusion_policy_debug
   resume: true
   tags:
   - train_diffusion_unet_hybrid
-  - two_finger_box_qpos
+  - pusht_image
   - default
 multi_run:
-  run_dir: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
-  wandb_name_base: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
+  run_dir: data/outputs/2023.01.16/20.20.06_train_diffusion_unet_hybrid_pusht_image
+  wandb_name_base: 2023.01.16-20.20.06_train_diffusion_unet_hybrid_pusht_image
 n_action_steps: 8
 n_latency_steps: 0
 n_obs_steps: 2
@@ -84,30 +84,45 @@ policy:
   shape_meta:
     action:
       shape:
-      - 4
+      - 2
     obs:
       agent_pos:
         shape:
-        - 12
+        - 2
         type: low_dim
       image:
         shape:
         - 3
-        - 256
-        - 256
+        - 96
+        - 96
         type: rgb
+shape_meta:
+  action:
+    shape:
+    - 2
+  obs:
+    agent_pos:
+      shape:
+      - 2
+      type: low_dim
+    image:
+      shape:
+      - 3
+      - 96
+      - 96
+      type: rgb
 task:
   dataset:
-    _target_: diffusion_policy.dataset.two_finger_image_dataset.TwoFingerImageDataset
+    _target_: diffusion_policy.dataset.pusht_image_dataset.PushTImageDataset
     horizon: 16
     max_train_episodes: 90
     pad_after: 7
     pad_before: 1
     seed: 42
     val_ratio: 0.02
-    zarr_path: data/two_finger/shadow_finger_box_qpos.zarr
+    zarr_path: data/pusht/pusht_cchi_v7_replay.zarr
   env_runner:
-    call_env_runner: false
+    # call_env_runner: true
     _target_: diffusion_policy.env_runner.pusht_image_runner.PushTImageRunner
     fps: 10
     legacy_test: true
@@ -124,25 +139,25 @@ task:
     train_start_seed: 0
   image_shape:
   - 3
-  - 256
-  - 256
-  name: two_finger_box_qpos
+  - 96
+  - 96
+  name: pusht_image
   shape_meta:
     action:
       shape:
-      - 4
+      - 2
     obs:
       agent_pos:
         shape:
-        - 12
+        - 2
         type: low_dim
       image:
         shape:
         - 3
-        - 256
-        - 256
+        - 96
+        - 96
         type: rgb
-task_name: two_finger_box_qpos
+task_name: pusht_image
 training:
   checkpoint_every: 50
   debug: false

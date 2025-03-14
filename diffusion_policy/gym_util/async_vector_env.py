@@ -12,15 +12,15 @@ import sys
 from enum import Enum
 from copy import deepcopy
 
-from gym import logger
-from gym.vector.vector_env import VectorEnv
-from gym.error import (
+from gymnasium import logger
+from gymnasium.vector.vector_env import VectorEnv
+from gymnasium.error import (
     AlreadyPendingCallError,
     NoAsyncCallError,
     ClosedEnvironmentError,
     CustomSpaceError,
 )
-from gym.vector.utils import (
+from gymnasium.vector.utils import (
     create_shared_memory,
     create_empty_array,
     write_to_shared_memory,
@@ -107,7 +107,7 @@ class AsyncVectorEnv(VectorEnv):
             action_space = action_space or dummy_env.action_space
         dummy_env.close()
         del dummy_env
-        super(AsyncVectorEnv, self).__init__(
+        super().__init__(
             num_envs=len(env_fns),
             observation_space=observation_space,
             action_space=action_space,
