@@ -5,10 +5,10 @@ checkpoint:
   save_last_ckpt: true
   save_last_snapshot: false
   topk:
-    format_str: epoch={epoch:04d}-val_loss={val_loss:.3f}.ckpt
+    monitor_key: test_mean_score
+    format_str: epoch={epoch:04d}-test_mean_score={test_mean_score:.3f}.ckpt
     k: 5
     mode: max
-    monitor_key: val_loss
 dataloader:
   batch_size: 64
   num_workers: 8
@@ -147,8 +147,8 @@ task:
         type: rgb
 task_name: two_finger_box_qpos
 training:
-  num_epochs: 8
-  checkpoint_every: 2
+  num_epochs: 800
+  checkpoint_every: 100
   debug: false
   device: cuda:0
   gradient_accumulate_every: 1
@@ -157,12 +157,12 @@ training:
   max_train_steps: null
   max_val_steps: null
   resume: true
-  rollout_every: 1
-  sample_every: 1
+  rollout_every: 100
+  sample_every: 100
   seed: 42
   tqdm_interval_sec: 1.0
   use_ema: true
-  val_every: 1
+  val_every: 100
 val_dataloader:
   batch_size: 64
   num_workers: 8

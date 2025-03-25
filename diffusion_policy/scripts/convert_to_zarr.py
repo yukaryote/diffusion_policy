@@ -124,21 +124,27 @@ def convert_to_replay_buffer_zarr(dataset_root, zarr_store_path, state_type='qpo
 
 @click.command()
 @click.option('-i', '--input', default="/data/scene-rep/u/sizheli/03-02-2025", help='input dir contains npy files')
-@click.option('-o', '--output', default="/data/scene-rep/u/iyu/diffusion_policy/data/two_finger/shadow_finger_box_qvel.zarr", help='output zarr path')
+@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/two_finger/shadow_finger_box_qpos_1traj.zarr", help='output zarr path')
 @click.option('--state_type', default='qpos', help='state type to use for replay buffer')
-@click.option('--abs_action', is_flag=True, default=False)
-def main(input, output, state_type, abs_action):
+@click.option('--num_traj', default=-1, help='number of trajectories to convert, -1 for all')
+def main(input, output, state_type, num_traj):
     data_directory = pathlib.Path(input)
+    # if input already exists, remove it
+    if os.path.exists(output):
+        print(f"Removing existing Zarr store at {output}")
+        shutil.rmtree(output)
 
     buffer = ReplayBuffer.create_empty_numpy()
-
-    for traj_dir in tqdm(sorted(data_directory.iterdir())):
+    traj_dirs = sorted(data_directory.iterdir())[:num_traj]
+    print("Number of trajectories to convert:", len(traj_dirs))
+    for traj_dir in tqdm(traj_dirs):
+        # each traj_dir is a directory containing images and states and actions
         if not traj_dir.is_dir():
             continue  # Skip non-directory files
 
         # Load images
         img_files = sorted(traj_dir.glob("*.jpg"))
-        images = np.stack([cv.imread(str(img_file)) for img_file in img_files])
+        images = np.stack([cv.cvtColor(cv.imread(str(img_file)), cv.COLOR_BGR2RGB) for img_file in img_files]).astype(np.float32)
 
         # Load states
         traj_data = load_gzip_file(traj_dir / "traj_data.pkl")
@@ -150,7 +156,6 @@ def main(input, output, state_type, abs_action):
 
         # Load actions
         actions = np.array(traj_data["actions"], dtype='f4')
-
         data = {
             "img": images,
             "state": states,

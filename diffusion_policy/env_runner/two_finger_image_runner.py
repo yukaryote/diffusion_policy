@@ -168,6 +168,10 @@ class TwoFingerImageRunner(BaseImageRunner):
         # allocate data
         all_video_paths = [None] * n_inits
         all_rewards = [None] * n_inits
+        all_joint_0 = [None] * n_inits
+        all_joint_1 = [None] * n_inits
+        all_joint_2 = [None] * n_inits
+        all_joint_3 = [None] * n_inits
 
         for chunk_idx in range(n_chunks):
             start = chunk_idx * n_envs
@@ -198,6 +202,10 @@ class TwoFingerImageRunner(BaseImageRunner):
             pbar = tqdm.tqdm(total=self.max_steps, desc=f"Eval ShadowFingerImageRunner {chunk_idx+1}/{n_chunks}", 
                 leave=False, mininterval=self.tqdm_interval_sec)
             done = False
+            joint_0_sanity = []
+            joint_1_sanity = []
+            joint_2_sanity = []
+            joint_3_sanity = []
             while not done:
                 # create obs dict
                 np_obs_dict = dict(obs)
@@ -225,7 +233,9 @@ class TwoFingerImageRunner(BaseImageRunner):
                 obs, reward, terminated, truncated, info = env.step(action)
                 done = np.all(terminated)
                 past_action = action
-
+                # update joint means
+                joint_0_sanity.append((np.max(action[:,0]), np.min(action[:,0]), np.mean(action[:,0])))
+                
                 # update pbar
                 pbar.update(action.shape[1])
             pbar.close()

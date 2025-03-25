@@ -29,7 +29,6 @@ from diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
 from diffusion_policy.model.diffusion.ema_model import EMAModel
 from diffusion_policy.model.common.lr_scheduler import get_scheduler
 
-from diffusion_policy.env_runner.two_finger_image_runner import TwoFingerImageRunner
 # import multiprocessing as mp
 # mp.set_start_method("forkserver", force=True)
 
@@ -110,7 +109,9 @@ class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
         # configure env
         env_runner: BaseImageRunner
         #if cfg.task.env_runner.call_env_runner:
-        env_runner = TwoFingerImageRunner(self.output_dir, state_type=cfg.task.env_runner.state_type)
+        env_runner = hydra.utils.instantiate(
+            cfg.task.env_runner,
+            output_dir=self.output_dir)
         assert isinstance(env_runner, BaseImageRunner)
         # else:
         #     env_runner = None
@@ -272,7 +273,6 @@ class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
                     for key, value in step_log.items():
                         new_key = key.replace('/', '_')
                         metric_dict[new_key] = value
-                    
                     # We can't copy the last checkpoint here
                     # since save_checkpoint uses threads.
                     # therefore at this point the file might have been empty!
