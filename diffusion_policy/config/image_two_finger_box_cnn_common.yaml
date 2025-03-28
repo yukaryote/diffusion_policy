@@ -147,8 +147,8 @@ task:
         type: rgb
 task_name: two_finger_box_qpos
 training:
-  num_epochs: 800
-  checkpoint_every: 100
+  num_epochs: 10
+  checkpoint_every: 10
   debug: false
   device: cuda:0
   gradient_accumulate_every: 1
@@ -157,12 +157,12 @@ training:
   max_train_steps: null
   max_val_steps: null
   resume: true
-  rollout_every: 100
-  sample_every: 100
+  rollout_every: 1
+  sample_every: 1
   seed: 42
   tqdm_interval_sec: 1.0
   use_ema: true
-  val_every: 100
+  val_every: 1
 val_dataloader:
   batch_size: 64
   num_workers: 8

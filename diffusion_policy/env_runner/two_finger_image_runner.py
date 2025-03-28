@@ -37,7 +37,9 @@ class TwoFingerImageRunner(BaseImageRunner):
             render_size=256,
             past_action=False,
             tqdm_interval_sec=5.0,
-            n_envs=1
+            n_envs=1,
+            legacy_test=False,
+            fixed_goal=True
         ):
         super().__init__(output_dir)
         if n_envs is None:
@@ -49,12 +51,14 @@ class TwoFingerImageRunner(BaseImageRunner):
             "camera_name": "birdview",
             "default_camera_config": None,
             "relative_control": True,
-            "actuation_scale": 0.1,
+            "actuation_scale": 1.0,
             "target_position_mode": "ignore",
             "target_rotation_mode": "z",
             "target_position_range": np.array([(-0.02, 0.00), (-0.02, 0.02), (0.0, 0.0)]),
             "reward_type": "dense",
+            "render_target": False,
             "n_substeps": 10,
+            "fixed_goal": np.array([-0.04952068, -0.01274052, -0.01001093, 1., 0., 0.,0.]),
         }
 
         steps_per_render = max(10 // fps, 1)
@@ -168,10 +172,6 @@ class TwoFingerImageRunner(BaseImageRunner):
         # allocate data
         all_video_paths = [None] * n_inits
         all_rewards = [None] * n_inits
-        all_joint_0 = [None] * n_inits
-        all_joint_1 = [None] * n_inits
-        all_joint_2 = [None] * n_inits
-        all_joint_3 = [None] * n_inits
 
         for chunk_idx in range(n_chunks):
             start = chunk_idx * n_envs
@@ -202,10 +202,6 @@ class TwoFingerImageRunner(BaseImageRunner):
             pbar = tqdm.tqdm(total=self.max_steps, desc=f"Eval ShadowFingerImageRunner {chunk_idx+1}/{n_chunks}", 
                 leave=False, mininterval=self.tqdm_interval_sec)
             done = False
-            joint_0_sanity = []
-            joint_1_sanity = []
-            joint_2_sanity = []
-            joint_3_sanity = []
             while not done:
                 # create obs dict
                 np_obs_dict = dict(obs)
@@ -233,8 +229,6 @@ class TwoFingerImageRunner(BaseImageRunner):
                 obs, reward, terminated, truncated, info = env.step(action)
                 done = np.all(terminated)
                 past_action = action
-                # update joint means
-                joint_0_sanity.append((np.max(action[:,0]), np.min(action[:,0]), np.mean(action[:,0])))
                 
                 # update pbar
                 pbar.update(action.shape[1])

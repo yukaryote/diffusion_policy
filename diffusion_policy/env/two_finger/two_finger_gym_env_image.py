@@ -21,6 +21,7 @@ class TwoFingerGoalEnvImage(ShadowArmBlockEnv):
     def __init__(
         self,
         state_type: str = "qpos",
+        fixed_goal: np.ndarray = None,
         **kwargs,
     ):
         if state_type == "qpos":
@@ -35,6 +36,9 @@ class TwoFingerGoalEnvImage(ShadowArmBlockEnv):
         super().__init__(
             **kwargs
         )
+        self.fixed_goal = fixed_goal
+        if self.fixed_goal is not None:
+            self.goal = self.fixed_goal
 
         self.action_space = spaces.Box(-1.0, 1.0, shape=(action_dim,), dtype=np.float32)
         if self.state_dim > 0:
@@ -83,7 +87,10 @@ class TwoFingerGoalEnvImage(ShadowArmBlockEnv):
         did_reset_sim = False
         while not did_reset_sim:
             did_reset_sim = self._reset_sim()
-        self.goal = self._sample_goal().copy()
+        if self.fixed_goal is None:
+            self.goal = self._sample_goal().copy()
+        else:
+            self.goal = self.fixed_goal
         obs = self._get_obs()
         if self.render_mode == "human":
             self.render()
