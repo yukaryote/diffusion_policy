@@ -22,6 +22,8 @@ class TwoFingerGoalEnvImage(ShadowArmBlockEnv):
         self,
         state_type: str = "qpos",
         fixed_goal: np.ndarray = None,
+        fixed_initial_pos: np.ndarray = None,
+        fixed_initial_quat: np.ndarray = None,
         **kwargs,
     ):
         if state_type == "qpos":
@@ -37,6 +39,8 @@ class TwoFingerGoalEnvImage(ShadowArmBlockEnv):
             **kwargs
         )
         self.fixed_goal = fixed_goal
+        self.fixed_initial_pos = fixed_initial_pos
+        self.fixed_initial_quat = fixed_initial_quat
         if self.fixed_goal is not None:
             self.goal = self.fixed_goal
 
@@ -86,7 +90,7 @@ class TwoFingerGoalEnvImage(ShadowArmBlockEnv):
             self._np_random, self._np_random_seed = seeding.np_random(seed)
         did_reset_sim = False
         while not did_reset_sim:
-            did_reset_sim = self._reset_sim()
+            did_reset_sim = self._reset_sim(fixed_initial_pos=self.fixed_initial_pos, fixed_initial_quat=self.fixed_initial_quat)
         if self.fixed_goal is None:
             self.goal = self._sample_goal().copy()
         else:

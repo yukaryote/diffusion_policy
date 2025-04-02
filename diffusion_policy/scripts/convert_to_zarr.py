@@ -124,9 +124,9 @@ def convert_to_replay_buffer_zarr(dataset_root, zarr_store_path, state_type='qpo
 
 @click.command()
 @click.option('-i', '--input', default="/data/scene-rep/u/iyu/data/ShadowFinger/03-27-2025", help='input dir contains npy files')
-@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/two_finger/shadow_finger_box_one_goal.zarr", help='output zarr path')
-@click.option('--state_type', default='qpos', help='state type to use for replay buffer')
-@click.option('--num_traj', default=-1, help='number of trajectories to convert, -1 for all')
+@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/two_finger/shadow_finger_box_1traj_rotz0_qvel.zarr", help='output zarr path')
+@click.option('--state_type', default='qvel', help='state type to use for replay buffer')
+@click.option('--num_traj', default=1, help='number of trajectories to convert, -1 for all')
 def main(input, output, state_type, num_traj):
     data_directory = pathlib.Path(input)
     # if input already exists, remove it
@@ -138,7 +138,6 @@ def main(input, output, state_type, num_traj):
     traj_dirs = sorted(data_directory.iterdir())[:num_traj]
     print("Number of trajectories to convert:", len(traj_dirs))
     for traj_dir in tqdm(traj_dirs):
-
         # Load states
         traj_data = load_gzip_file(traj_dir)
         images = traj_data["images"]

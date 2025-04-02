@@ -1,0 +1,43 @@
+name: two_finger_box_qpos
+
+image_shape: &image_shape [3, 256, 256]
+shape_meta: &shape_meta
+  # acceptable types: rgb, low_dim
+  action:
+    shape:
+    - 4
+  obs:
+    image:
+      shape:
+      - 3
+      - 256
+      - 256
+      type: rgb
+
+env_runner:
+  # call_env_runner: true
+  _target_: diffusion_policy.env_runner.two_finger_image_runner.TwoFingerImageRunner
+  state_type: qpos
+  fps: 10
+  legacy_test: true
+  max_steps: 300
+  n_action_steps: 8
+  n_envs: null
+  n_obs_steps: 2
+  n_test: 2
+  n_test_vis: 4
+  n_train: 2
+  n_train_vis: 2
+  past_action: false
+  test_start_seed: 100000
+  train_start_seed: 0
+
+dataset:
+  _target_: diffusion_policy.dataset.two_finger_image_dataset.TwoFingerImageDataset
+  horizon: 16
+  max_train_episodes: 90
+  pad_after: 7
+  pad_before: 1
+  seed: 42
+  val_ratio: 0.02
+  zarr_path: data/two_finger/shadow_finger_box_qvel.zarr

@@ -251,8 +251,12 @@ class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
                         
                         result = policy.predict_action(obs_dict)
                         pred_action = result['action_pred']
+                        # playback the predicted action
+                        pred_action_np = pred_action.clamp(-1.0, 1.0).detach().to('cpu').numpy()
+                        runner_log = env_runner.playback(pred_action_np[0])
                         mse = torch.nn.functional.mse_loss(pred_action, gt_action)
                         step_log['train_action_mse_error'] = mse.item()
+                        step_log.update(runner_log)
                         del batch
                         del obs_dict
                         del gt_action

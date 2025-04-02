@@ -58,7 +58,11 @@ class TwoFingerImageRunner(BaseImageRunner):
             "reward_type": "dense",
             "render_target": False,
             "n_substeps": 10,
+            "randomize_initial_position": False,
+            "randomize_initial_rotation": False,
             "fixed_goal": np.array([-0.04952068, -0.01274052, -0.01001093, 1., 0., 0.,0.]),
+            "fixed_initial_pos": np.array([-5.95728468e-02,  1.00593079e-03, -1.00547610e-02]),
+            "fixed_initial_quat": np.array([1.46531912e-01, 3.71157153e-17, 3.10497731e-18, -9.89205943e-01]),
         }
 
         steps_per_render = max(10 // fps, 1)
@@ -144,7 +148,6 @@ class TwoFingerImageRunner(BaseImageRunner):
         # env.reset(seed=env_seeds)
         # x = env.step(env.action_space.sample())
         # imgs = env.call('render')
-        # import pdb; pdb.set_trace()
 
         self.env = env
         self.env_fns = env_fns
@@ -262,6 +265,82 @@ class TwoFingerImageRunner(BaseImageRunner):
             if video_path is not None:
                 sim_video = wandb.Video(video_path)
                 log_data[prefix+f'sim_video_{seed}'] = sim_video
+
+        # log aggregate metrics
+        for prefix, value in max_rewards.items():
+            name = prefix+'mean_score'
+            value = np.mean(value)
+            log_data[name] = value
+
+        return log_data
+    
+    def playback(self, actions):
+        env = self.env
+         # plan for rollout
+        n_envs = len(self.env_fns)
+        n_inits = len(self.env_init_fn_dills)
+        n_chunks = math.ceil(n_inits / n_envs)
+
+        # allocate data
+        all_video_paths = [None] * n_inits
+        all_rewards = [None] * n_inits
+
+        for chunk_idx in range(n_chunks):
+            start = chunk_idx * n_envs
+            end = min(n_inits, start + n_envs)
+            this_global_slice = slice(start, end)
+            this_n_active_envs = end - start
+            this_local_slice = slice(0,this_n_active_envs)
+            
+            this_init_fns = self.env_init_fn_dills[this_global_slice]
+            n_diff = n_envs - len(this_init_fns)
+            if n_diff > 0:
+                this_init_fns.extend([self.env_init_fn_dills[0]]*n_diff)
+            assert len(this_init_fns) == n_envs
+
+            # init envs
+            # USE THIS FOR ASYNCVECTORENV
+            # env.call_each('run_dill_function', 
+            #     args_list=[(x,) for x in this_init_fns])
+
+            # USE THIS FOR SYNCVECTORENV
+            env.call('run_dill_function', dill_fn=this_init_fns[0])
+
+            # start rollout
+            obs, info = env.reset()
+            past_action = None
+
+            pbar = tqdm.tqdm(total=self.max_steps, desc=f"Playback ShadowFingerImageRunner {chunk_idx+1}/{n_chunks}", 
+                    leave=False, mininterval=self.tqdm_interval_sec)
+            # copy actions n_envs times along new axis
+            actions = np.stack([actions] * this_n_active_envs, axis=0)
+            done = False
+            for i in range(0, actions.shape[1], 8):
+                obs, reward, terminated, truncated, info = env.step(actions[:, i:i+8])
+                done = np.all(terminated)
+                pbar.update(actions[:, i].shape[0])
+            pbar.close()
+
+            all_video_paths[this_global_slice] = env.render()[this_local_slice]
+            all_rewards[this_global_slice] = env.call('get_attr', 'reward')[this_local_slice]
+
+        _ = env.reset()
+
+        # log
+        max_rewards = collections.defaultdict(list)
+        log_data = dict()
+        for i in range(n_inits):
+            seed = self.env_seeds[i]
+            prefix = self.env_prefixs[i]
+            max_reward = np.max(all_rewards[i])
+            max_rewards[prefix].append(max_reward)
+            log_data[prefix+f'playback_max_reward_{seed}'] = max_reward
+
+            # visualize sim
+            video_path = all_video_paths[i]
+            if video_path is not None:
+                sim_video = wandb.Video(video_path)
+                log_data[prefix+f'playback_video_{seed}'] = sim_video
 
         # log aggregate metrics
         for prefix, value in max_rewards.items():
