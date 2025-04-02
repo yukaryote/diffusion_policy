@@ -21,6 +21,7 @@ import cv2 as cv
 from tqdm import tqdm
 
 from diffusion_policy.common.replay_buffer import ReplayBuffer
+import multiprocessing as mp
 
 
 # load everything onto cpu
@@ -50,113 +51,63 @@ def move(destination, depth=None):
             move(destination, os.path.join(depth + [file_or_dir], os.sep))
 
 
-def convert_to_replay_buffer_zarr(dataset_root, zarr_store_path, state_type='qpos', remove_existing=False):
-    dataset_root = Path(dataset_root)
-    # remove existing zarr store if it exists, remove everything in the store
-    if remove_existing and os.path.exists(zarr_store_path):
-        print(f"Removing existing Zarr store at {zarr_store_path}")
-        shutil.rmtree(zarr_store_path)
-    zarr_store = zarr.open(zarr_store_path, mode='w')
-
-    # Initialize lists to hold aggregated data
-    all_actions = []
-    all_images = []
-    all_states = []
-    episode_ends = []
-    current_index = 0
-
-    for traj_dir in tqdm(sorted(dataset_root.iterdir())):
-        if not traj_dir.is_dir():
-            continue  # Skip non-directory files
-
-        # Load images
-        img_files = sorted(traj_dir.glob("*.jpg"))
-        images = np.stack([cv.imread(img_file) for img_file in img_files])
-        all_images.append(images)
-
-        # Load states
-        traj_data = load_gzip_file(traj_dir / "traj_data.pkl")
+def process_trajectory(args):
+    """Function to load and process a single trajectory."""
+    traj_dir, state_type = args
+    try:
+        traj_data = load_gzip_file(os.path.join(traj_dir, "traj_data.pkl"))
+        images = np.stack([
+            cv.cvtColor(cv.imread(str(img_file)), cv.COLOR_BGR2RGB)
+            for img_file in sorted(traj_dir.glob("*.jpg"))
+        ])
         states = np.array(traj_data["states"], dtype='f4')
+
         if state_type == 'qpos':
             states = states[:, :12]
         elif state_type == 'qvel':
             states = states[:, :18]
-        all_states.append(states)
 
-        # Load actions
         actions = np.array(traj_data["actions"], dtype='f4')
-        all_actions.append(actions)
 
-        # Update episode end index
-        current_index += len(actions)
-        # print("images shape:", images.shape)
-        # print("states shape:", states.shape)
-        # print("actions shape:", actions.shape)
-        # print("Current index:", current_index)
-        episode_ends.append(current_index)
-
-    # Concatenate all data along the time dimension
-    all_actions = np.concatenate(all_actions, axis=0)
-    all_images = np.concatenate(all_images, axis=0)
-    all_states = np.concatenate(all_states, axis=0)
-    episode_ends = np.array(episode_ends, dtype='int64')
-
-    # Create datasets in the Zarr store
-    data_group = zarr_store.create_group('data')
-    meta_group = zarr_store.create_group('meta')
-
-    actions_arr = data_group.create_array("action", shape=all_actions.shape, chunks=(1, all_actions.shape[1]), dtype='f4')
-    img_arr = data_group.create_array("img", shape=all_images.shape, chunks=(1, *all_images.shape[1:]), dtype='f4')
-    states_arr = data_group.create_array("state", shape=all_states.shape, chunks=(1, all_states.shape[1]), dtype='f4')
-    ends_arr = meta_group.create_array("episode_ends", shape=episode_ends.shape, chunks=(1,), dtype='int64')
-
-    actions_arr[:] = all_actions
-    img_arr[:] = all_images
-    states_arr[:] = all_states
-    ends_arr[:] = episode_ends
-
-    # move all data out of the 'c' directory and into each 'action', 'img', 'state' directory
-    for key in data_group.keys():
-        dst_path = zarr_store_path + '/' + key
-        move(dst_path)
-    print(f"Dataset converted to ReplayBuffer Zarr format at {zarr_store_path}")
+        return {
+            "img": images,
+            "state": states,
+            "action": actions
+        }
+    except Exception as e:
+        print(f"Error processing {traj_dir}: {e}")
+        return None
 
 
 @click.command()
-@click.option('-i', '--input', default="/data/scene-rep/u/iyu/data/ShadowFinger/03-27-2025", help='input dir contains npy files')
-@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/two_finger/shadow_finger_box_1traj_rotz0_qvel.zarr", help='output zarr path')
+@click.option('-i', '--input', default="/data/scene-rep/u/iyu/data/ShadowFinger/lester/03-31-2025", help='input dir contains npy files')
+@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/two_finger/shadow_finger_box_qvel.zarr", help='output zarr path')
 @click.option('--state_type', default='qvel', help='state type to use for replay buffer')
-@click.option('--num_traj', default=1, help='number of trajectories to convert, -1 for all')
-def main(input, output, state_type, num_traj):
+@click.option('--num_traj', default=-1, help='number of trajectories to convert, -1 for all')
+@click.option('--num_workers', default=8, help='number of parallel workers')
+def main(input, output, state_type, num_traj, num_workers):
     data_directory = pathlib.Path(input)
-    # if input already exists, remove it
+    
+    # If output already exists, remove it
     if os.path.exists(output):
         print(f"Removing existing Zarr store at {output}")
         shutil.rmtree(output)
 
     buffer = ReplayBuffer.create_empty_numpy()
-    traj_dirs = sorted(data_directory.iterdir())[:num_traj]
+    # only get directories, not files
+    traj_dirs = sorted([d for d in data_directory.iterdir() if d.is_dir()])[:num_traj]
     print("Number of trajectories to convert:", len(traj_dirs))
-    for traj_dir in tqdm(traj_dirs):
-        # Load states
-        traj_data = load_gzip_file(traj_dir)
-        images = traj_data["images"]
-        states = np.array(traj_data["states"], dtype='f4')
-        if state_type == 'qpos':
-            states = states[:, :12]
-        elif state_type == 'qvel':
-            states = states[:, :18]
 
-        # Load actions
-        actions = np.array(traj_data["actions"], dtype='f4')
-        data = {
-            "img": images,
-            "state": states,
-            "action": actions
-        }
-        buffer.add_episode(data)
+    # Use multiprocessing Pool
+    with mp.Pool(processes=num_workers) as pool:
+        results = list(tqdm(pool.imap(process_trajectory, [(traj_dir, state_type) for traj_dir in traj_dirs]), total=len(traj_dirs)))
+
+    # Add valid episodes to the replay buffer
+    for data in results:
+        if data is not None:
+            buffer.add_episode(data)
+
     buffer.save_to_path(zarr_path=output, chunk_length=-1)
-
 
 if __name__ == '__main__':
     main()
