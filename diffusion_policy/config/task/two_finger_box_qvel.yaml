@@ -45,3 +45,4 @@ dataset:
   seed: 42
   val_ratio: 0.02
   zarr_path: data/two_finger/shadow_finger_box_qvel.zarr
+  state_type: ${env_runner.state_type}

@@ -40,7 +40,11 @@ class TwoFingerGoalEnvImage(ShadowArmBlockEnv):
         )
         self.fixed_goal = fixed_goal
         self.fixed_initial_pos = fixed_initial_pos
+        if fixed_initial_pos is not None and type(fixed_initial_pos) is not np.ndarray:
+            self.fixed_initial_pos = np.array(fixed_initial_pos)
         self.fixed_initial_quat = fixed_initial_quat
+        if fixed_initial_quat is not None and type(fixed_initial_quat) is not np.ndarray:
+            self.fixed_initial_quat = np.array(fixed_initial_quat)
         if self.fixed_goal is not None:
             self.goal = self.fixed_goal
 

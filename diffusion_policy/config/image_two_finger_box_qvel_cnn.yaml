@@ -21,6 +21,7 @@ task:
   dataset:
     _target_: diffusion_policy.dataset.two_finger_image_dataset.TwoFingerImageDataset
     zarr_path: data/two_finger/shadow_finger_box_qvel.zarr
+    state_type: qvel
   env_runner:
     _target_: diffusion_policy.env_runner.two_finger_image_runner.TwoFingerImageRunner
     state_type: qvel

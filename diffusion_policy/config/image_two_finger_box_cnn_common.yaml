@@ -24,7 +24,7 @@ ema:
   power: 0.75
   update_after_step: 0
 exp_name: default
-horizon: 128
+horizon: 10
 keypoint_visible_rate: 1.0
 logging:
   group: null
@@ -88,10 +88,6 @@ policy:
       shape:
       - 4
     obs:
-      agent_pos:
-        shape:
-        - 12
-        type: low_dim
       image:
         shape:
         - 3
@@ -125,6 +121,23 @@ task:
     past_action: false
     test_start_seed: 100000
     train_start_seed: 0
+    env_kwargs:
+      arm_type: shadow
+      render_mode: rgb_array
+      camera_name: birdview
+      default_camera_config: null
+      relative_control: false
+      actuation_scale: 1.0
+      target_position_mode: ignore
+      target_rotation_mode: z
+      target_position_range: [[-0.02, 0.00], [-0.02, 0.02], [0.0, 0.0]]
+      reward_type: "dense"
+      render_target: false
+      n_substeps: 10
+      randomize_initial_position: false
+      randomize_initial_rotation: false
+      fixed_initial_pos: [-0.059728, 0.010059, -0.010547]
+      fixed_initial_quat:  [0.146531, 0.0, 0.0, -0.989206]
   image_shape:
   - 3
   - 256
@@ -147,8 +160,8 @@ task:
         type: rgb
 task_name: two_finger_box_qpos
 training:
-  num_epochs: 500
-  checkpoint_every: 500
+  num_epochs: 100
+  checkpoint_every: 50
   debug: false
   device: cuda:0
   gradient_accumulate_every: 1
@@ -157,12 +170,12 @@ training:
   max_train_steps: null
   max_val_steps: null
   resume: true
-  rollout_every: 100
-  sample_every: 100
+  rollout_every: 10
+  sample_every: 10
   seed: 42
   tqdm_interval_sec: 1.0
   use_ema: true
-  val_every: 100
+  val_every: 10
 val_dataloader:
   batch_size: 64
   num_workers: 8

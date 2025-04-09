@@ -39,31 +39,12 @@ class TwoFingerImageRunner(BaseImageRunner):
             tqdm_interval_sec=5.0,
             n_envs=1,
             legacy_test=False,
-            fixed_goal=True
+            fixed_goal=True,
+            env_kwargs={},
         ):
         super().__init__(output_dir)
         if n_envs is None:
             n_envs = n_train + n_test
-
-        env_kwargs = {
-            "arm_type": "shadow",
-            "render_mode": "rgb_array",
-            "camera_name": "birdview",
-            "default_camera_config": None,
-            "relative_control": True,
-            "actuation_scale": 1.0,
-            "target_position_mode": "ignore",
-            "target_rotation_mode": "z",
-            "target_position_range": np.array([(-0.02, 0.00), (-0.02, 0.02), (0.0, 0.0)]),
-            "reward_type": "dense",
-            "render_target": False,
-            "n_substeps": 10,
-            "randomize_initial_position": False,
-            "randomize_initial_rotation": False,
-            "fixed_goal": np.array([-0.04952068, -0.01274052, -0.01001093, 1., 0., 0.,0.]),
-            "fixed_initial_pos": np.array([-5.95728468e-02,  1.00593079e-03, -1.00547610e-02]),
-            "fixed_initial_quat": np.array([1.46531912e-01, 3.71157153e-17, 3.10497731e-18, -9.89205943e-01]),
-        }
 
         steps_per_render = max(10 // fps, 1)
         def env_fn():
@@ -244,6 +225,7 @@ class TwoFingerImageRunner(BaseImageRunner):
 
         # log
         max_rewards = collections.defaultdict(list)
+        end_rewards = collections.defaultdict(list)
         log_data = dict()
         # results reported in the paper are generated using the commented out line below
         # which will only report and average metrics from first n_envs initial condition and seeds
@@ -259,6 +241,9 @@ class TwoFingerImageRunner(BaseImageRunner):
             max_reward = np.max(all_rewards[i])
             max_rewards[prefix].append(max_reward)
             log_data[prefix+f'sim_max_reward_{seed}'] = max_reward
+            end_reward = all_rewards[i][-1]
+            end_rewards[prefix].append(end_reward)
+            log_data[prefix+f'sim_end_reward_{seed}'] = end_reward
 
             # visualize sim
             video_path = all_video_paths[i]

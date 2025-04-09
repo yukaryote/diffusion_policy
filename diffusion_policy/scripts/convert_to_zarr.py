@@ -53,7 +53,7 @@ def move(destination, depth=None):
 
 def process_trajectory(args):
     """Function to load and process a single trajectory."""
-    traj_dir, state_type = args
+    traj_dir, state_type, abs_control = args
     try:
         traj_data = load_gzip_file(os.path.join(traj_dir, "traj_data.pkl"))
         images = np.stack([
@@ -67,7 +67,12 @@ def process_trajectory(args):
         elif state_type == 'qvel':
             states = states[:, :18]
 
-        actions = np.array(traj_data["actions"], dtype='f4')
+        if abs_control:
+            # for shadow finger, qpos is 6D but we only need 4D
+            abs_action = traj_data["qpos"][:, [0,1,3,4]]
+            actions = np.array(abs_action, dtype='f4')
+        else:
+            actions = np.array(traj_data["actions"], dtype='f4')
 
         return {
             "img": images,
@@ -81,11 +86,12 @@ def process_trajectory(args):
 
 @click.command()
 @click.option('-i', '--input', default="/data/scene-rep/u/iyu/data/ShadowFinger/lester/03-31-2025", help='input dir contains npy files')
-@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/two_finger/shadow_finger_box_qvel.zarr", help='output zarr path')
+@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/two_finger/shadow_finger_box_qvel_abs.zarr", help='output zarr path')
 @click.option('--state_type', default='qvel', help='state type to use for replay buffer')
 @click.option('--num_traj', default=-1, help='number of trajectories to convert, -1 for all')
 @click.option('--num_workers', default=8, help='number of parallel workers')
-def main(input, output, state_type, num_traj, num_workers):
+@click.option('--absolute_control', default=False, help='use absolute control')
+def main(input, output, state_type, num_traj, num_workers, absolute_control):
     data_directory = pathlib.Path(input)
     
     # If output already exists, remove it
@@ -100,7 +106,7 @@ def main(input, output, state_type, num_traj, num_workers):
 
     # Use multiprocessing Pool
     with mp.Pool(processes=num_workers) as pool:
-        results = list(tqdm(pool.imap(process_trajectory, [(traj_dir, state_type) for traj_dir in traj_dirs]), total=len(traj_dirs)))
+        results = list(tqdm(pool.imap(process_trajectory, [(traj_dir, state_type, absolute_control) for traj_dir in traj_dirs]), total=len(traj_dirs)))
 
     # Add valid episodes to the replay buffer
     for data in results:

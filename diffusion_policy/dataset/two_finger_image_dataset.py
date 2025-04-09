@@ -23,6 +23,7 @@ class TwoFingerImageDataset(BaseImageDataset):
             ):
         
         super().__init__()
+        self.state_type = state_type
         self.replay_buffer = ReplayBuffer.copy_from_path(
             zarr_path, keys=['img', 'state', 'action'])
         val_mask = get_val_mask(
@@ -59,10 +60,15 @@ class TwoFingerImageDataset(BaseImageDataset):
         return val_set
 
     def get_normalizer(self, mode='limits', **kwargs):
-        data = {
-            'action': self.replay_buffer['action'],
-            'agent_pos': self.replay_buffer['state']
-        }
+        if self.state_type != "stateless":
+            data = {
+                'action': self.replay_buffer['action'],
+                'agent_pos': self.replay_buffer['state']
+            }
+        else:
+            data = {
+                'action': self.replay_buffer['action'],
+            }
         normalizer = LinearNormalizer()
         normalizer.fit(data=data, last_n_dims=1, mode=mode, **kwargs)
         normalizer['image'] = get_image_range_normalizer()
@@ -75,13 +81,21 @@ class TwoFingerImageDataset(BaseImageDataset):
         agent_pos = sample['state'].astype(np.float32) # (agent_posx2, block_posex3)
         image = np.moveaxis(sample['img'],-1,1)/255
 
-        data = {
-            'obs': {
-                'image': image, # T, 3, 256, 256
-                'agent_pos': agent_pos, # T, state_dim
-            },
-            'action': sample['action'].astype(np.float32) # T, action_dim
-        }
+        if self.state_type != 'stateless':
+            data = {
+                'obs': {
+                    'image': image, # T, 3, 256, 256
+                    'agent_pos': agent_pos, # T, state_dim
+                },
+                'action': sample['action'].astype(np.float32) # T, action_dim
+            }
+        else:
+            data = {
+                'obs': {
+                    'image': image, # T, 3, 256, 256
+                },
+                'action': sample['action'].astype(np.float32) # T, action_dim
+            }
         return data
     
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
