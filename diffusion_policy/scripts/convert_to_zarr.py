@@ -55,11 +55,17 @@ def process_trajectory(args):
     """Function to load and process a single trajectory."""
     traj_dir, state_type, abs_control = args
     try:
-        traj_data = load_gzip_file(os.path.join(traj_dir, "traj_data.pkl"))
-        images = np.stack([
-            cv.cvtColor(cv.imread(str(img_file)), cv.COLOR_BGR2RGB)
-            for img_file in sorted(traj_dir.glob("*.jpg"))
-        ])
+        if traj_dir.is_file():
+            traj_data = load_gzip_file(traj_dir)
+        else:
+            traj_data = load_gzip_file(os.path.join(traj_dir, "traj_data.pkl"))
+        if "images" in traj_data.keys():
+            images = np.array(traj_data["images"], dtype='f4')
+        else:
+            images = np.stack([
+                cv.cvtColor(cv.imread(str(img_file)), cv.COLOR_BGR2RGB)
+                for img_file in sorted(traj_dir.glob("*.jpg"))
+            ])
         states = np.array(traj_data["states"], dtype='f4')
 
         if state_type == 'qpos':
@@ -85,9 +91,9 @@ def process_trajectory(args):
 
 
 @click.command()
-@click.option('-i', '--input', default="/data/scene-rep/u/iyu/data/ShadowFinger/lester/03-31-2025", help='input dir contains npy files')
-@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/two_finger/shadow_finger_box_qvel_abs.zarr", help='output zarr path')
-@click.option('--state_type', default='qvel', help='state type to use for replay buffer')
+@click.option('-i', '--input', default="/data/scene-rep/u/iyu/data/ShadowFinger/lester/", help='input dir contains npy files')
+@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/two_finger/shadow_finger_box_stateless.zarr", help='output zarr path')
+@click.option('--state_type', default='stateless', help='state type to use for replay buffer')
 @click.option('--num_traj', default=-1, help='number of trajectories to convert, -1 for all')
 @click.option('--num_workers', default=8, help='number of parallel workers')
 @click.option('--absolute_control', default=False, help='use absolute control')

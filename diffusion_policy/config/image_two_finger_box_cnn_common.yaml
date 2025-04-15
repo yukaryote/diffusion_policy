@@ -24,7 +24,6 @@ ema:
   power: 0.75
   update_after_step: 0
 exp_name: default
-horizon: 10
 keypoint_visible_rate: 1.0
 logging:
   group: null
@@ -40,9 +39,6 @@ logging:
 multi_run:
   run_dir: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
   wandb_name_base: data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_${name}_${task_name}
-n_action_steps: 8
-n_latency_steps: 0
-n_obs_steps: 2
 name: train_diffusion_unet_hybrid
 obs_as_global_cond: true
 optimizer:
@@ -110,7 +106,7 @@ task:
     state_type: qpos
     fps: 10
     legacy_test: true
-    max_steps: 300
+    max_steps: 800
     n_action_steps: 8
     n_envs: null
     n_obs_steps: 2
@@ -126,7 +122,7 @@ task:
       render_mode: rgb_array
       camera_name: birdview
       default_camera_config: null
-      relative_control: false
+      relative_control: true
       actuation_scale: 1.0
       target_position_mode: ignore
       target_rotation_mode: z
@@ -136,8 +132,8 @@ task:
       n_substeps: 10
       randomize_initial_position: false
       randomize_initial_rotation: false
-      fixed_initial_pos: [-0.059728, 0.010059, -0.010547]
-      fixed_initial_quat:  [0.146531, 0.0, 0.0, -0.989206]
+      fixed_initial_pos: [-0.075, -8.90494604e-03, -1.00520011e-02]
+      fixed_initial_quat:  [0.5, 0., 0., -0.8660254]
   image_shape:
   - 3
   - 256
@@ -160,8 +156,8 @@ task:
         type: rgb
 task_name: two_finger_box_qpos
 training:
-  num_epochs: 100
-  checkpoint_every: 50
+  num_epochs: 800
+  checkpoint_every: 100
   debug: false
   device: cuda:0
   gradient_accumulate_every: 1
@@ -170,12 +166,12 @@ training:
   max_train_steps: null
   max_val_steps: null
   resume: true
-  rollout_every: 10
-  sample_every: 10
+  rollout_every: 50
+  sample_every: 50
   seed: 42
   tqdm_interval_sec: 1.0
   use_ema: true
-  val_every: 10
+  val_every: 50
 val_dataloader:
   batch_size: 64
   num_workers: 8

@@ -126,7 +126,7 @@ task:
     _target_: diffusion_policy.env_runner.pusht_image_runner.PushTImageRunner
     fps: 10
     legacy_test: true
-    max_steps: 300
+    max_steps: 800
     n_action_steps: 8
     n_envs: null
     n_obs_steps: 2
