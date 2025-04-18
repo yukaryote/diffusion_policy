@@ -311,8 +311,8 @@ class RobomimicImageRunnerJointSpace(BaseImageRunner):
                 
                 # step env
                 env_action = action
-                if self.abs_action:
-                    env_action = self.undo_transform_action(action)
+                # if self.abs_action:
+                #     env_action = self.undo_transform_action(action)
 
                 obs, reward, done, info = env.step(env_action)
                 done = np.all(done)
