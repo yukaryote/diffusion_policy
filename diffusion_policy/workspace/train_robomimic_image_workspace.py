@@ -113,6 +113,9 @@ class TrainRobomimicImageWorkspace(BaseWorkspace):
             cfg.training.val_every = 1
             cfg.training.sample_every = 1
 
+        # print number of parameters
+        num_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        print(f"Number of parameters: {num_params}")
         # training loop
         log_path = os.path.join(self.output_dir, 'logs.json.txt')
         with JsonLogger(log_path) as json_logger:

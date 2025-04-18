@@ -12,15 +12,15 @@ import sys
 from enum import Enum
 from copy import deepcopy
 
-from gymnasium import logger
-from gymnasium.vector.vector_env import VectorEnv
-from gymnasium.error import (
+from gym import logger
+from gym.vector.vector_env import VectorEnv
+from gym.error import (
     AlreadyPendingCallError,
     NoAsyncCallError,
     ClosedEnvironmentError,
     CustomSpaceError,
 )
-from gymnasium.vector.utils import (
+from gym.vector.utils import (
     create_shared_memory,
     create_empty_array,
     write_to_shared_memory,
@@ -226,6 +226,7 @@ class AsyncVectorEnv(VectorEnv):
             )
 
         results, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
+        import pdb; pdb.set_trace()
         self._raise_if_errors(successes)
         self._state = AsyncState.DEFAULT
 

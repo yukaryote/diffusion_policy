@@ -32,6 +32,7 @@ def create_env(env_meta, env_target, shape_meta, enable_render=True):
         render=False,
         render_offscreen=enable_render,
         use_image_obs=enable_render,
+        **env_meta['env_kwargs'],
     )
     return env
 
@@ -61,7 +62,7 @@ class RobomimicImageRunnerJointSpace(BaseImageRunner):
             past_action=False,
             abs_action=False,
             tqdm_interval_sec=5.0,
-            n_envs=None
+            n_envs=None,
         ):
         super().__init__(output_dir)
 
@@ -83,7 +84,9 @@ class RobomimicImageRunnerJointSpace(BaseImageRunner):
         if abs_action:
             env_meta['env_kwargs']['controller_configs']['control_delta'] = False
             rotation_transformer = RotationTransformer('axis_angle', 'rotation_6d')
-
+        # make controller configs None bc we are in joint space
+        env_meta['env_kwargs']['controller_configs'] = None
+        print("env kwargs", env_meta['env_kwargs'])
         def env_fn():
             robomimic_env = create_env(
                 env_meta=env_meta, 
@@ -123,34 +126,39 @@ class RobomimicImageRunnerJointSpace(BaseImageRunner):
         # a separate env_fn that does not create OpenGL context (enable_render=False)
         # is needed to initialize spaces.
         def dummy_env_fn():
-            robomimic_env = create_env(
-                    env_meta=env_meta, 
-                    shape_meta=shape_meta,
-                    enable_render=False
-                )
-            return MultiStepWrapper(
-                VideoRecordingWrapper(
-                    RobomimicImageWrapper(
-                        env=robomimic_env,
+            try:
+                robomimic_env = create_env(
+                        env_meta=env_meta, 
                         shape_meta=shape_meta,
-                        init_state=None,
-                        render_obs_key=render_obs_key
+                        env_target=env_target,
+                        enable_render=False
+                    )
+                return MultiStepWrapper(
+                    VideoRecordingWrapper(
+                        RobomimicImageWrapper(
+                            env=robomimic_env,
+                            shape_meta=shape_meta,
+                            init_state=None,
+                            render_obs_key=render_obs_key
+                        ),
+                        video_recoder=VideoRecorder.create_h264(
+                            fps=fps,
+                            codec='h264',
+                            input_pix_fmt='rgb24',
+                            crf=crf,
+                            thread_type='FRAME',
+                            thread_count=1
+                        ),
+                        file_path=None,
+                        steps_per_render=steps_per_render
                     ),
-                    video_recoder=VideoRecorder.create_h264(
-                        fps=fps,
-                        codec='h264',
-                        input_pix_fmt='rgb24',
-                        crf=crf,
-                        thread_type='FRAME',
-                        thread_count=1
-                    ),
-                    file_path=None,
-                    steps_per_render=steps_per_render
-                ),
-                n_obs_steps=n_obs_steps,
-                n_action_steps=n_action_steps,
-                max_episode_steps=max_steps
-            )
+                    n_obs_steps=n_obs_steps,
+                    n_action_steps=n_action_steps,
+                    max_episode_steps=max_steps
+                )
+            except Exception as e:
+                print(f"Error initializing environment: {e}")
+                return None
 
         env_fns = [env_fn] * n_envs
         env_seeds = list()

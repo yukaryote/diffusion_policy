@@ -54,8 +54,8 @@ policy:
   _target_: diffusion_policy.policy.diffusion_unet_hybrid_image_policy.DiffusionUnetHybridImagePolicy
   cond_predict_scale: true
   crop_shape:
-  - 84
-  - 84
+  - 230
+  - 230
   diffusion_step_embed_dim: 128
   down_dims:
   - 128
@@ -156,8 +156,8 @@ task:
         type: rgb
 task_name: two_finger_box_qpos
 training:
-  num_epochs: 800
-  checkpoint_every: 100
+  num_epochs: 80
+  checkpoint_every: 10
   debug: false
   device: cuda:0
   gradient_accumulate_every: 1
@@ -166,12 +166,12 @@ training:
   max_train_steps: null
   max_val_steps: null
   resume: true
-  rollout_every: 50
-  sample_every: 50
+  rollout_every: 10
+  sample_every: 10
   seed: 42
   tqdm_interval_sec: 1.0
   use_ema: true
-  val_every: 50
+  val_every: 10
 val_dataloader:
   batch_size: 64
   num_workers: 8

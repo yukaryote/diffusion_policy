@@ -6,6 +6,8 @@ from robosuite.environments.manipulation.lift import Lift
 
 
 class LiftJointSpace(Lift):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
     def _pre_action(self, action, policy_step=False):
         """
         Do any preprocessing before taking an action.
