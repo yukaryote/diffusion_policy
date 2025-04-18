@@ -85,18 +85,10 @@ class MultiStepWrapper(gym.Wrapper):
         self.reward = list()
         self.done = list()
         self.info = defaultdict(lambda : deque(maxlen=n_obs_steps+1))
-
-    def seed(self, seed=None):
-        if seed is None:
-            seed = np.random.randint(0,25536)
-        self._seed = seed
-        self.np_random = np.random.default_rng(seed)
-
-    def reset(self, **kwargs):
+    
+    def reset(self):
         """Resets the environment using kwargs."""
-        obs = super().reset(**kwargs)
-        if type(obs) == tuple:
-            obs, info = obs
+        obs = super().reset()
 
         self.obs = deque([obs], maxlen=self.n_obs_steps+1)
         self.reward = list()
@@ -114,22 +106,22 @@ class MultiStepWrapper(gym.Wrapper):
             if len(self.done) > 0 and self.done[-1]:
                 # termination
                 break
-            observation, reward, terminated, truncated, info = super().step(act)
+            observation, reward, done, info = super().step(act)
 
             self.obs.append(observation)
             self.reward.append(reward)
             if (self.max_episode_steps is not None) \
                 and (len(self.reward) >= self.max_episode_steps):
                 # truncation
-                terminated = True
-            self.done.append(terminated)
+                done = True
+            self.done.append(done)
             self._add_info(info)
 
         observation = self._get_obs(self.n_obs_steps)
         reward = aggregate(self.reward, self.reward_agg_method)
-        terminated = aggregate(self.done, 'max')
+        done = aggregate(self.done, 'max')
         info = dict_take_last_n(self.info, self.n_obs_steps)
-        return observation, reward, terminated, truncated, info
+        return observation, reward, done, info
 
     def _get_obs(self, n_steps=1):
         """

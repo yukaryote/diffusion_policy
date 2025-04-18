@@ -107,7 +107,7 @@ class AsyncVectorEnv(VectorEnv):
             action_space = action_space or dummy_env.action_space
         dummy_env.close()
         del dummy_env
-        super().__init__(
+        super(AsyncVectorEnv, self).__init__(
             num_envs=len(env_fns),
             observation_space=observation_space,
             action_space=action_space,
@@ -226,7 +226,6 @@ class AsyncVectorEnv(VectorEnv):
             )
 
         results, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
-        import pdb; pdb.set_trace()
         self._raise_if_errors(successes)
         self._state = AsyncState.DEFAULT
 
