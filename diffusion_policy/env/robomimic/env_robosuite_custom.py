@@ -14,6 +14,7 @@ from robosuite.utils.mjcf_utils import postprocess_model_xml
 import robomimic.utils.obs_utils as ObsUtils
 from robomimic.envs.env_robosuite import EnvRobosuite
 from diffusion_policy.env.robomimic.lift_joint_space import LiftJointSpace
+from diffusion_policy.env.robomimic.transport_joint_space import TransportJointSpace
 
 REGISTERED_ENVS = {}
 
@@ -24,6 +25,8 @@ def register_env(target_class):
 def make_env(env_target, *args, **kwargs):
     if env_target == "LiftJointSpace":
         return LiftJointSpace(*args, **kwargs)
+    elif env_target == "TransportJointSpace":
+        return TransportJointSpace(*args, **kwargs)
 
 class EnvRobosuiteCustom(EnvRobosuite):
     """Wrapper class for robosuite environments (https://github.com/ARISE-Initiative/robosuite)"""

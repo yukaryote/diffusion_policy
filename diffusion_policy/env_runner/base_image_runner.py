@@ -7,3 +7,6 @@ class BaseImageRunner:
 
     def run(self, policy: BaseImagePolicy) -> Dict:
         raise NotImplementedError()
+    
+    def playback(self, action):
+        raise NotImplementedError()

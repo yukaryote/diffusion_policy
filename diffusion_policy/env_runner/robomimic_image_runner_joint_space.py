@@ -85,7 +85,21 @@ class RobomimicImageRunnerJointSpace(BaseImageRunner):
             env_meta['env_kwargs']['controller_configs']['control_delta'] = False
             rotation_transformer = RotationTransformer('axis_angle', 'rotation_6d')
         # make controller configs None bc we are in joint space
-        env_meta['env_kwargs']['controller_configs'] = None
+        env_meta['env_kwargs']['controller_configs'] = {
+            "type": "JOINT_POSITION",
+            "input_max": 1,
+            "input_min": -1,
+            "output_max": 0.05,
+            "output_min": -0.05,
+            "kp": 50,
+            "damping_ratio": 1,
+            "impedance_mode": "fixed",
+            "kp_limits": [0, 300],
+            "damping_ratio_limits": [0, 10],
+            "qpos_limits": None,
+            "interpolation": None,
+            "ramp_ratio": 0.2
+        }
         print("env kwargs", env_meta['env_kwargs'])
         def env_fn():
             robomimic_env = create_env(
@@ -380,3 +394,79 @@ class RobomimicImageRunnerJointSpace(BaseImageRunner):
             uaction = uaction.reshape(*raw_shape[:-1], 14)
 
         return uaction
+
+    def playback(self, actions):
+        env = self.env
+         # plan for rollout
+        n_envs = len(self.env_fns)
+        n_inits = len(self.env_init_fn_dills)
+        n_chunks = math.ceil(n_inits / n_envs)
+
+        # allocate data
+        all_video_paths = [None] * n_inits
+        all_rewards = [None] * n_inits
+
+        for chunk_idx in range(n_chunks):
+            start = chunk_idx * n_envs
+            end = min(n_inits, start + n_envs)
+            this_global_slice = slice(start, end)
+            this_n_active_envs = end - start
+            this_local_slice = slice(0,this_n_active_envs)
+            
+            this_init_fns = self.env_init_fn_dills[this_global_slice]
+            n_diff = n_envs - len(this_init_fns)
+            if n_diff > 0:
+                this_init_fns.extend([self.env_init_fn_dills[0]]*n_diff)
+            assert len(this_init_fns) == n_envs
+
+            # init envs
+            # USE THIS FOR ASYNCVECTORENV
+            # env.call_each('run_dill_function', 
+            #     args_list=[(x,) for x in this_init_fns])
+
+            # USE THIS FOR SYNCVECTORENV
+            env.call('run_dill_function', dill_fn=this_init_fns[0])
+
+            # start rollout
+            obs, info = env.reset()
+            past_action = None
+
+            pbar = tqdm.tqdm(total=self.max_steps, desc=f"Playback ShadowFingerImageRunner {chunk_idx+1}/{n_chunks}", 
+                    leave=False, mininterval=self.tqdm_interval_sec)
+            # copy actions n_envs times along new axis
+            actions = np.stack([actions] * this_n_active_envs, axis=0)
+            done = False
+            for i in range(0, actions.shape[1], 8):
+                obs, reward, terminated, truncated, info = env.step(actions[:, i:i+8])
+                done = np.all(terminated)
+                pbar.update(actions[:, i].shape[0])
+            pbar.close()
+
+            all_video_paths[this_global_slice] = env.render()[this_local_slice]
+            all_rewards[this_global_slice] = env.call('get_attr', 'reward')[this_local_slice]
+
+        _ = env.reset()
+
+        # log
+        max_rewards = collections.defaultdict(list)
+        log_data = dict()
+        for i in range(n_inits):
+            seed = self.env_seeds[i]
+            prefix = self.env_prefixs[i]
+            max_reward = np.max(all_rewards[i])
+            max_rewards[prefix].append(max_reward)
+            log_data[prefix+f'playback_max_reward_{seed}'] = max_reward
+
+            # visualize sim
+            video_path = all_video_paths[i]
+            if video_path is not None:
+                sim_video = wandb.Video(video_path)
+                log_data[prefix+f'playback_video_{seed}'] = sim_video
+
+        # log aggregate metrics
+        for prefix, value in max_rewards.items():
+            name = prefix+'mean_score'
+            value = np.mean(value)
+            log_data[name] = value
+
+        return log_data

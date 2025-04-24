@@ -1,4 +1,4 @@
-name: transport_image
+name: transport_image_abs_joint_space
 
 shape_meta: &shape_meta
   # acceptable types: rgb, low_dim
@@ -9,11 +9,8 @@ shape_meta: &shape_meta
     robot0_eye_in_hand_image:
       shape: [3, 84, 84]
       type: rgb
-    robot0_eef_pos:
-      shape: [3]
-      # type default: low_dim
-    robot0_eef_quat:
-      shape: [4]
+    robot0_joint_pos:
+      shape: [7]
     robot0_gripper_qpos:
       shape: [2]
     shouldercamera1_image:
@@ -22,15 +19,12 @@ shape_meta: &shape_meta
     robot1_eye_in_hand_image:
       shape: [3, 84, 84]
       type: rgb
-    robot1_eef_pos:
-      shape: [3]
-      # type default: low_dim
-    robot1_eef_quat:
-      shape: [4]
+    robot1_joint_pos:
+      shape: [7]
     robot1_gripper_qpos:
       shape: [2]
   action: 
-    shape: [20]
+    shape: [18]
 
 task_name: &task_name transport
 dataset_type: &dataset_type ph
@@ -38,9 +32,10 @@ dataset_path: &dataset_path data/robomimic/datasets/${task.task_name}/${task.dat
 abs_action: &abs_action True
 
 env_runner:
-  _target_: diffusion_policy.env_runner.robomimic_image_runner.RobomimicImageRunner
+  _target_: diffusion_policy.env_runner.robomimic_image_runner_joint_space.RobomimicImageRunnerJointSpace
   dataset_path: *dataset_path
   shape_meta: *shape_meta
+  env_target: "TransportJointSpace"
   n_train: 6
   n_train_vis: 2
   train_start_idx: 0
@@ -60,7 +55,7 @@ env_runner:
 # evaluation at this config requires a 16 core 64GB instance.
 
 dataset:
-  _target_: diffusion_policy.dataset.robomimic_replay_image_dataset.RobomimicReplayImageDataset
+  _target_: diffusion_policy.dataset.robomimic_replay_image_joint_space_dataset.RobomimicReplayImageJointSpaceDataset
   shape_meta: *shape_meta
   dataset_path: *dataset_path
   horizon: ${horizon}
@@ -70,6 +65,6 @@ dataset:
   abs_action: *abs_action
   rotation_rep: 'rotation_6d'
   use_legacy_normalizer: False
-  use_cache: False
+  use_cache: False  
   seed: 42
   val_ratio: 0.02

@@ -88,19 +88,15 @@ class RobomimicReplayImageJointSpaceDataset(RobomimicReplayImageDataset):
                 abs_action=abs_action, 
                 rotation_transformer=rotation_transformer)
         print('ReplayBuffer loaded!')
-        desired_obs_keys = [
-            'agentview_image',
-            'robot0_eye_in_hand_image',
-            'robot0_joint_pos',
-            # 'robot0_joint_pos_cos',
-            # 'robot0_joint_pos_sin',
-            # 'robot0_joint_vel',
-            'robot0_gripper_qpos',
-            # 'robot0_gripper_qvel'
-        ]
-
-        rgb_keys = [key for key in desired_obs_keys if shape_meta['obs'][key].get('type', 'low_dim') == 'rgb']
-        lowdim_keys = [key for key in desired_obs_keys if shape_meta['obs'][key].get('type', 'low_dim') == 'low_dim']
+        rgb_keys = list()
+        lowdim_keys = list()
+        obs_shape_meta = shape_meta['obs']
+        for key, attr in obs_shape_meta.items():
+            type = attr.get('type', 'low_dim')
+            if type == 'rgb':
+                rgb_keys.append(key)
+            elif type == 'low_dim':
+                lowdim_keys.append(key)
         
         # for key in rgb_keys:
         #     replay_buffer[key].compressor.numthreads=1
@@ -274,6 +270,8 @@ def _convert_robomimic_to_replay(store, shape_meta, dataset_path, abs_action, ro
     with h5py.File(dataset_path) as file:
         # count total steps
         demos = file['data']
+        env_meta = json.loads(file['data'].attrs['env_args'])
+        num_robots = len(env_meta['env_kwargs']['robots'])
         print("demo keys", demos[f'demo_0'].keys())
         episode_ends = list()
         prev_end = 0
@@ -292,7 +290,10 @@ def _convert_robomimic_to_replay(store, shape_meta, dataset_path, abs_action, ro
         for key in tqdm(lowdim_keys + ['action'], desc="Loading lowdim data"):
             data_key = 'obs/' + key
             if key == 'action':
-                data_key = ['next_obs/robot0_joint_pos', 'next_obs/robot0_gripper_qpos']
+                data_key = []
+                for r in range(num_robots):
+                    data_key.append(f'next_obs/robot{r}_joint_pos')
+                    data_key.append(f'next_obs/robot{r}_gripper_qpos')
             this_data = list()
             for i in range(len(demos)):
                 demo = demos[f'demo_{i}']
