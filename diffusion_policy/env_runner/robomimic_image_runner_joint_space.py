@@ -91,7 +91,7 @@ class RobomimicImageRunnerJointSpace(BaseImageRunner):
             "input_min": -1,
             "output_max": 0.05,
             "output_min": -0.05,
-            "kp": 50,
+            "kp": 300,
             "damping_ratio": 1,
             "impedance_mode": "fixed",
             "kp_limits": [0, 300],

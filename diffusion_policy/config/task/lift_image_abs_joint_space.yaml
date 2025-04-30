@@ -23,7 +23,7 @@ shape_meta: &shape_meta
     # robot0_joint_vel:
     #   shape: [7]
   action: 
-    shape: [9]
+    shape: [8]
 
 task_name: &task_name lift
 dataset_type: &dataset_type ph

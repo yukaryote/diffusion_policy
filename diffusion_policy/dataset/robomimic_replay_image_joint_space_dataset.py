@@ -293,20 +293,28 @@ def _convert_robomimic_to_replay(store, shape_meta, dataset_path, abs_action, ro
                 data_key = []
                 for r in range(num_robots):
                     data_key.append(f'next_obs/robot{r}_joint_pos')
-                    data_key.append(f'next_obs/robot{r}_gripper_qpos')
+                    data_key.append(f'actions')
             this_data = list()
             for i in range(len(demos)):
                 demo = demos[f'demo_{i}']
                 if isinstance(data_key, list):
-                    demo_data = []
+                    joint_data = {}
+                    gripper_data = None
                     for dk in data_key:
                         if "next_obs" in dk:
-                            demo_data.append(demo[dk][:].astype(np.float32))
+                            robot_idx = int(dk.split('robot')[1].split('_')[0])
+                            joint_data[robot_idx] = demo[dk][:].astype(np.float32)
                         elif "actions" in dk:
                             # only get the gripper action
-                            gripper_action = demo[dk][:, 6:]
-                            demo_data.append(gripper_action.astype(np.float32))
-                    this_data.append(np.concatenate(demo_data, axis=1))
+                            gripper_action = [demo['actions'][:, 6 * i:6 * i + 1] for i in range(num_robots)]
+                            gripper_action = np.concatenate(gripper_action, axis=1)
+                            gripper_data = gripper_action
+                    demo_data = []
+                    for robot_idx in joint_data.keys():
+                        concat_data = np.concatenate([joint_data[robot_idx], gripper_data[:, robot_idx:robot_idx + 1]], axis=-1)
+                        demo_data.append(concat_data)
+                    demo_data_concat = np.concatenate(demo_data, axis=1).astype(np.float32)
+                    this_data.append(demo_data_concat)
                 else:
                     this_data.append(demo[data_key][:].astype(np.float32))
             this_data = np.concatenate(this_data, axis=0)

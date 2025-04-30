@@ -75,7 +75,6 @@ class EnvRobosuiteCustom(EnvRobosuite):
             use_object_obs=True,
             use_camera_obs=use_image_obs,
             camera_depths=False,
-            controller_configs=None,
         )
         kwargs.update(update_kwargs)
 
