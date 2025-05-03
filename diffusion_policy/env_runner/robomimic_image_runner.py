@@ -63,7 +63,8 @@ class RobomimicImageRunner(BaseImageRunner):
             past_action=False,
             abs_action=False,
             tqdm_interval_sec=5.0,
-            n_envs=None
+            n_envs=None,
+            is_vectorized=True,
         ):
         super().__init__(output_dir)
 
@@ -113,6 +114,23 @@ class RobomimicImageRunner(BaseImageRunner):
                     ),
                     file_path=None,
                     steps_per_render=steps_per_render
+                ),
+                n_obs_steps=n_obs_steps,
+                n_action_steps=n_action_steps,
+                max_episode_steps=max_steps
+            )
+
+        def single_env_fn():
+            robomimic_env = create_env(
+                env_meta=env_meta, 
+                shape_meta=shape_meta
+            )
+            return MultiStepWrapper(
+                RobomimicImageWrapper(
+                    env=robomimic_env,
+                    shape_meta=shape_meta,
+                    init_state=None,
+                    render_obs_key=render_obs_key
                 ),
                 n_obs_steps=n_obs_steps,
                 n_action_steps=n_action_steps,
@@ -215,7 +233,10 @@ class RobomimicImageRunner(BaseImageRunner):
             env_prefixs.append('test/')
             env_init_fn_dills.append(dill.dumps(init_fn))
 
-        env = AsyncVectorEnv(env_fns, dummy_env_fn=dummy_env_fn)
+        if is_vectorized:
+            env = AsyncVectorEnv(env_fns, dummy_env_fn=dummy_env_fn)
+        else:
+            env = single_env_fn()
         # env = SyncVectorEnv(env_fns)
 
 

@@ -122,6 +122,43 @@ class MultiStepWrapper(gym.Wrapper):
         done = aggregate(self.done, 'max')
         info = dict_take_last_n(self.info, self.n_obs_steps)
         return observation, reward, done, info
+    
+    def step_custom(self, action):
+        """
+        actions: (n_action_steps,) + action_shape
+        """
+        video = []
+        for act in action:
+            if len(self.done) > 0 and self.done[-1]:
+                # termination
+                break
+            observation, reward, done, info = super().step(act)
+            sim = self.env.env.env.sim
+            state = sim.get_state()
+            state.qpos[:7] = act[:-1]
+            state.qvel[:] = 0
+            sim.set_state(state)
+            sim.forward()
+            for i in range(10):
+                sim.forward()
+                sim.step()
+
+            self.obs.append(observation)
+            self.reward.append(reward)
+            if (self.max_episode_steps is not None) \
+                and (len(self.reward) >= self.max_episode_steps):
+                # truncation
+                done = True
+            self.done.append(done)
+            self._add_info(info)
+            img = self.env.render()
+            video.append(img)
+
+        observation = self._get_obs(self.n_obs_steps)
+        reward = aggregate(self.reward, self.reward_agg_method)
+        done = aggregate(self.done, 'max')
+        info = dict_take_last_n(self.info, self.n_obs_steps)
+        return observation, reward, done, info, video
 
     def _get_obs(self, n_steps=1):
         """

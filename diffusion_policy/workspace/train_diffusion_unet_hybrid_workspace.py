@@ -204,6 +204,11 @@ class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
                         if (cfg.training.max_train_steps is not None) \
                             and batch_idx >= (cfg.training.max_train_steps-1):
                             break
+                        policy = self.model
+                        if cfg.training.use_ema:
+                            policy = self.ema_model
+                        policy.eval()
+                        runner_log = env_runner.run(policy)
 
                 # at the end of each epoch
                 # replace train_loss with epoch average

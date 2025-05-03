@@ -63,6 +63,7 @@ class RobomimicImageRunnerJointSpace(BaseImageRunner):
             abs_action=False,
             tqdm_interval_sec=5.0,
             n_envs=None,
+            is_vectorized=True,
         ):
         super().__init__(output_dir)
 
@@ -101,6 +102,26 @@ class RobomimicImageRunnerJointSpace(BaseImageRunner):
             "ramp_ratio": 0.2
         }
         print("env kwargs", env_meta['env_kwargs'])
+
+        def single_env_fn():
+            robomimic_env = create_env(
+                env_meta=env_meta, 
+                env_target=env_target,
+                shape_meta=shape_meta
+            )
+            
+            return MultiStepWrapper(
+                RobomimicImageWrapper(
+                    env=robomimic_env,
+                    shape_meta=shape_meta,
+                    init_state=None,
+                    render_obs_key=render_obs_key
+                ),
+                n_obs_steps=n_obs_steps,
+                n_action_steps=n_action_steps,
+                max_episode_steps=max_steps
+            )
+        
         def env_fn():
             robomimic_env = create_env(
                 env_meta=env_meta, 
@@ -236,7 +257,10 @@ class RobomimicImageRunnerJointSpace(BaseImageRunner):
             env_prefixs.append('test/')
             env_init_fn_dills.append(dill.dumps(init_fn))
 
-        env = AsyncVectorEnv(env_fns, dummy_env_fn=dummy_env_fn)
+        if is_vectorized:
+            env = AsyncVectorEnv(env_fns, dummy_env_fn=dummy_env_fn)
+        else:
+            env = single_env_fn()
         # env = SyncVectorEnv(env_fns)
 
 
