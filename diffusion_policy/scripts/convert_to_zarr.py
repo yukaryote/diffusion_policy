@@ -67,6 +67,7 @@ def process_trajectory(args):
                 for img_file in sorted(traj_dir.glob("*.jpg"))
             ])
         states = np.array(traj_data["states"], dtype='f4')
+        print("init state", states[0])
 
         if state_type == 'qpos':
             states = states[:, :12]
@@ -107,7 +108,10 @@ def main(input, output, state_type, num_traj, num_workers, absolute_control):
 
     buffer = ReplayBuffer.create_empty_numpy()
     # only get directories, not files
-    traj_dirs = sorted([d for d in data_directory.iterdir() if d.is_dir()])[:num_traj]
+    if num_traj != -1:
+        traj_dirs = sorted([d for d in data_directory.iterdir()])[:num_traj]
+    else:
+        traj_dirs = sorted([d for d in data_directory.iterdir()])
     print("Number of trajectories to convert:", len(traj_dirs))
 
     # Use multiprocessing Pool

@@ -176,7 +176,10 @@ class TwoFingerImageRunner(BaseImageRunner):
             #     args_list=[(x,) for x in this_init_fns])
 
             # USE THIS FOR SYNCVECTORENV
-            env.call('run_dill_function', dill_fn=this_init_fns[0])
+            # env.call('run_dill_function', dill_fn=this_init_fns[0])     
+            # env.call_each('run_dill_function', args_list=[(x,) for x in this_init_fns])
+            for i in range(n_envs):
+                env.call('run_dill_function', dill_fn=this_init_fns[i])
 
             # start rollout
             obs, info = env.reset()

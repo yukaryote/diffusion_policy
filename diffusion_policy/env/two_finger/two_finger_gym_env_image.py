@@ -94,7 +94,7 @@ class TwoFingerGoalEnvImage(ShadowArmBlockEnv):
             self._np_random, self._np_random_seed = seeding.np_random(seed)
         did_reset_sim = False
         while not did_reset_sim:
-            did_reset_sim = self._reset_sim(fixed_initial_pos=self.fixed_initial_pos, fixed_initial_quat=self.fixed_initial_quat)
+            did_reset_sim = self._reset_sim()
         if self.fixed_goal is None:
             self.goal = self._sample_goal().copy()
         else:
