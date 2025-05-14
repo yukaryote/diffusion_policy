@@ -98,7 +98,7 @@ def process_trajectory(args):
 @click.option('--num_traj', default=-1, help='number of trajectories to convert, -1 for all')
 @click.option('--num_workers', default=8, help='number of parallel workers')
 @click.option('--absolute_control', default=False, help='use absolute control')
-def main(input, output, state_type, num_traj, num_workers, absolute_control):
+def shadow_finger_to_zarr(input, output, state_type, num_traj, num_workers, absolute_control):
     data_directory = pathlib.Path(input)
     
     # If output already exists, remove it
@@ -125,8 +125,60 @@ def main(input, output, state_type, num_traj, num_workers, absolute_control):
 
     buffer.save_to_path(zarr_path=output, chunk_length=-1)
 
+
+@click.command()
+@click.option('-i', '--input', default="/data/scene-rep/u/iyu/data/pusher_only_down/training", help='input dir contains npy files')
+@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/pusher/pusher_only_down.zarr", help='output zarr path')
+@click.option('--num_traj', default=-1, help='number of trajectories to convert, -1 for all')
+@click.option('--num_workers', default=8, help='number of parallel workers')
+@click.option('--absolute_control', default=True, help='use absolute control')
+def pusher_to_zarr(input, output, num_traj, num_workers, absolute_control):
+
+    def process_trajectory(traj_files, abs_control):
+        """Function to load and process a single trajectory."""
+        results = []
+        for traj_file in traj_files:
+            try:
+                traj_data = np.load(traj_file)
+                images = traj_data["birdview_rgb"]
+                states = traj_data["joint_pos"][:, :-1]
+                print("init state", states[0])
+
+                actions = np.concatenate([states[1:], states[-1:]])
+                print(actions.shape)
+
+                results.append({
+                    "img": images,
+                    "state": states,
+                    "action": actions
+                })
+            except Exception as e:
+                print(f"Error processing {traj_file}: {e}")
+        return results
+
+    data_directory = pathlib.Path(input)
+    
+    # If output already exists, remove it
+    if os.path.exists(output):
+        print(f"Removing existing Zarr store at {output}")
+        shutil.rmtree(output)
+
+    buffer = ReplayBuffer.create_empty_numpy()
+    
+    traj_files = list(data_directory.iterdir())
+    print("Number of trajectories to convert:", len(traj_files))
+
+    results = process_trajectory(traj_files, absolute_control)
+
+    # Add valid episodes to the replay buffer
+    for data in results:
+        if data is not None:
+            buffer.add_episode(data)
+
+    buffer.save_to_path(zarr_path=output, chunk_length=-1)
+
 if __name__ == '__main__':
-    main()
+    pusher_to_zarr()
     # Example usage
     # convert_to_replay_buffer_zarr("/data/scene-rep/u/sizheli/03-02-2025", 
     #                             "/data/scene-rep/u/iyu/diffusion_policy/data/two_finger/shadow_finger_box_qpos.zarr",

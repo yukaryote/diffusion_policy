@@ -224,11 +224,6 @@ class TwoFingerGoalEnvImage(ShadowArmBlockEnv):
 
         self._mujoco_step(action)
 
-        self._step_callback()
-
-        if self.render_mode == "human":
-            self.render()
-
         obs = self._get_obs()
 
         info = self._get_info()
