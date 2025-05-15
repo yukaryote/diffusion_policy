@@ -145,17 +145,17 @@ if __name__ == "__main__":
     from jacobian.config import get_typed_root_config
     import mediapy as media
 
-    config_path = "/data/scene-rep/u/iyu/scene-jacobian-discovery/assets/config/dataset/push_env_cfg/pusher_only.yaml"
+    config_path = "/data/scene-rep/u/iyu/scene-jacobian-discovery/assets/config/dataset/push_env_cfg/pusher_with_rod.yaml"
     config_name = "pusher_only"
     cfg_dict = OmegaConf.load(config_path)
     push_env_cfg = get_typed_root_config(cfg_dict=cfg_dict, cfg_type=PushEnvCfg)
     pusher_env = PusherEnv(push_env_cfg)
-    vid = []
+    vid = [pusher_env.render()]
     actions_y = np.linspace(0.36, -1.0, 50)
     for i, y in enumerate(actions_y):
         action = np.array([0., y])
         print(i, pusher_env.mujoco_env.data.get_body_xpos("pusher_main"), action)
-        obs, reward, done, info = pusher_env.step(action)
+        obs, reward, done, _, info = pusher_env.step(action)
         img = pusher_env.render()
         vid.append(img)
     media.write_video("/data/scene-rep/u/iyu/scene-jacobian-discovery/data/test_diff_policy_pusher_env.mp4", vid)

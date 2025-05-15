@@ -37,7 +37,7 @@ class PusherImageRunner(BaseImageRunner):
             n_envs=1,
             legacy_test=False,
             fixed_goal=True,
-            push_env_cfg_path="/data/scene-rep/u/iyu/scene-jacobian-discovery/assets/config/dataset/push_env_cfg/pusher_only.yaml",
+            push_env_cfg_path="/data/scene-rep/u/iyu/scene-jacobian-discovery/assets/config/dataset/push_env_cfg/pusher_with_rod.yaml",
         ):
         super().__init__(output_dir)
         cfg_dict = OmegaConf.load(push_env_cfg_path)
