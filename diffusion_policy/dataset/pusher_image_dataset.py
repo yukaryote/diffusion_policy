@@ -18,7 +18,8 @@ class PusherImageDataset(BaseImageDataset):
             pad_after=0,
             seed=42,
             val_ratio=0.0,
-            max_train_episodes=None
+            max_train_episodes=None,
+            fit_offset=False
             ):
         
         super().__init__()
@@ -33,6 +34,10 @@ class PusherImageDataset(BaseImageDataset):
             mask=train_mask, 
             max_n=max_train_episodes, 
             seed=seed)
+            
+        print("Number of episodes:", self.replay_buffer.n_episodes)
+        print("Train mask:", train_mask)
+        print("Episode lengths:", self.replay_buffer.episode_lengths)
 
         self.sampler = SequenceSampler(
             replay_buffer=self.replay_buffer, 
@@ -40,10 +45,14 @@ class PusherImageDataset(BaseImageDataset):
             pad_before=pad_before, 
             pad_after=pad_after,
             episode_mask=train_mask)
+        print("Number of sequences:", len(self.sampler))
+        print("First few indices:", self.sampler.indices[:5])
+        print("Last few indices:", self.sampler.indices[-5:])
         self.train_mask = train_mask
         self.horizon = horizon
         self.pad_before = pad_before
         self.pad_after = pad_after
+        self.fit_offset = fit_offset
 
     def get_validation_dataset(self):
         val_set = copy.copy(self)
@@ -63,7 +72,7 @@ class PusherImageDataset(BaseImageDataset):
             'agent_pos': self.replay_buffer['state'][...,:2]
         }
         normalizer = LinearNormalizer()
-        normalizer.fit(data=data, last_n_dims=1, mode=mode, **kwargs)
+        normalizer.fit(data=data, last_n_dims=1, mode=mode, fit_offset=self.fit_offset, **kwargs)
         normalizer['image'] = get_image_range_normalizer()
         return normalizer
 
@@ -92,11 +101,33 @@ class PusherImageDataset(BaseImageDataset):
 
 def test():
     import os
-    zarr_path = os.path.expanduser('~/dev/diffusion_policy/data/pusht/pusht_cchi_v7_replay.zarr')
-    dataset = PusherImageDataset(zarr_path, horizon=16)
+    zarr_path = os.path.join('/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/pusher/pusher_down_right.zarr')
+    dataset = PusherImageDataset(zarr_path, 
+                                horizon=8, 
+                                max_train_episodes=90,
+                                pad_after=7,
+                                pad_before=1,
+                                seed=42,
+                                fit_offset=False
+                                )
+    print(len(dataset))
 
-    # from matplotlib import pyplot as plt
+    from matplotlib import pyplot as plt
+    import numpy as np
+    print(dataset[np.random.randint(low=0, high=len(dataset))]["action"])
+
+    from torch.utils.data import DataLoader
+    train_dataloader = DataLoader(dataset, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=False, batch_size=64)
+    for batch_idx, batch in enumerate(train_dataloader):
+        print(batch['action'])
+        print(batch['action'].shape)
     # normalizer = dataset.get_normalizer()
     # nactions = normalizer['action'].normalize(dataset.replay_buffer['action'])
     # diff = np.diff(nactions, axis=0)
     # dists = np.linalg.norm(np.diff(nactions, axis=0), axis=-1)
+    # print("diff", diff)
+    # print("dists", dists)
+
+
+if __name__ == "__main__":
+    test()

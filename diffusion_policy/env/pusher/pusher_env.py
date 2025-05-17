@@ -21,7 +21,7 @@ class PusherEnv(gymnasium.Env):
             **kwargs
         )
         self._seed = None
-        self.seed()
+        # self.seed()
         self.mujoco_env = PushEnv(pusher_cfg)
         self.goal = np.array([0.8, -0.8])
 
@@ -43,11 +43,11 @@ class PusherEnv(gymnasium.Env):
             )
         )
 
-    def seed(self, seed=None):
-        if seed is None:
-            seed = np.random.randint(0,25536)
-        self._seed = seed
-        self.np_random = np.random.default_rng(seed)
+    # def seed(self, seed=None):
+    #     if seed is None:
+    #         seed = np.random.randint(0,25536)
+    #     self._seed = seed
+    #     self.np_random = np.random.default_rng(seed)
 
     def reset(
         self,

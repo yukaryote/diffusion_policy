@@ -41,10 +41,10 @@ class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
         super().__init__(cfg, output_dir=output_dir)
 
         # set seed
-        seed = cfg.training.seed
-        torch.manual_seed(seed)
-        np.random.seed(seed)
-        random.seed(seed)
+        # seed = cfg.training.seed
+        # torch.manual_seed(seed)
+        # np.random.seed(seed)
+        # random.seed(seed)
 
         # configure model
         self.model: DiffusionUnetHybridImagePolicy = hydra.utils.instantiate(cfg.policy)
@@ -251,12 +251,15 @@ class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
                         
                         result = policy.predict_action(obs_dict)
                         pred_action = result['action_pred']
-                        # playback the predicted action
-                        # pred_action_np = pred_action.clamp(-1.0, 1.0)[0].detach().to('cpu').numpy()
-                        # runner_log = env_runner.playback(pred_action_np)
+                        # if (self.epoch % (cfg.training.sample_every * 5) == 0):
+                        #     # playback the predicted action
+                        #     pred_action_np = pred_action[0].detach().to('cpu').numpy()
+                        #     print("predicted action", pred_action_np)
+                        #     print("ground truth action", gt_action[0])
+                        #     runner_log = env_runner.playback(pred_action_np)
+                        #     step_log.update(runner_log)
                         mse = torch.nn.functional.mse_loss(pred_action, gt_action)
                         step_log['train_action_mse_error'] = mse.item()
-                        # step_log.update(runner_log)
                         del batch
                         del obs_dict
                         del gt_action

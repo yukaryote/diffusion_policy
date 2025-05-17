@@ -50,6 +50,22 @@ optimizer:
   lr: 0.0001
   weight_decay: 1.0e-06
 past_action_visible: false
+shape_meta: &shape_meta
+  action:
+    shape:
+    - 4
+  obs:
+    agent_pos:
+      shape:
+      - 12
+      type: low_dim
+    image:
+      shape:
+      - 3
+      - 256
+      - 256
+      type: rgb
+
 policy:
   _target_: diffusion_policy.policy.diffusion_unet_hybrid_image_policy.DiffusionUnetHybridImagePolicy
   cond_predict_scale: true
@@ -58,9 +74,9 @@ policy:
   - 230
   diffusion_step_embed_dim: 128
   down_dims:
-  - 128
-  - 256
   - 512
+  - 1024
+  - 2048
   eval_fixed_crop: true
   horizon: 16
   kernel_size: 5
@@ -79,22 +95,14 @@ policy:
   num_inference_steps: 100
   obs_as_global_cond: true
   obs_encoder_group_norm: true
-  shape_meta:
-    action:
-      shape:
-      - 4
-    obs:
-      image:
-        shape:
-        - 3
-        - 256
-        - 256
-        type: rgb
+  shape_meta: *shape_meta
+
 task:
   dataset:
     _target_: diffusion_policy.dataset.two_finger_image_dataset.TwoFingerImageDataset
+    shape_meta: *shape_meta
     horizon: 16
-    max_train_episodes: 90
+    max_train_episodes: null
     pad_after: 7
     pad_before: 1
     seed: 42
@@ -122,7 +130,7 @@ task:
       render_mode: rgb_array
       camera_name: birdview
       default_camera_config: null
-      relative_control: true
+      relative_control: false
       actuation_scale: 1.0
       target_position_mode: ignore
       target_rotation_mode: z
@@ -139,21 +147,7 @@ task:
   - 256
   - 256
   name: two_finger_box_qpos
-  shape_meta:
-    action:
-      shape:
-      - 4
-    obs:
-      agent_pos:
-        shape:
-        - 12
-        type: low_dim
-      image:
-        shape:
-        - 3
-        - 256
-        - 256
-        type: rgb
+  shape_meta: *shape_meta
 task_name: two_finger_box_qpos
 training:
   num_epochs: 800

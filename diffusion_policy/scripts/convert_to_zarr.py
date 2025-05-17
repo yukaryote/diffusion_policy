@@ -127,8 +127,8 @@ def shadow_finger_to_zarr(input, output, state_type, num_traj, num_workers, abso
 
 
 @click.command()
-@click.option('-i', '--input', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/data/pusher/rod/training", help='input dir contains npy files')
-@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/pusher/pusher_rod_down.zarr", help='output zarr path')
+@click.option('-i', '--input', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/data/pusher_only_down_right/training", help='input dir contains npy files')
+@click.option('-o', '--output', default="/data/scene-rep/u/iyu/scene-jacobian-discovery/diff-policy/diffusion_policy/data/pusher/pusher_down_right.zarr", help='output zarr path')
 @click.option('--num_traj', default=-1, help='number of trajectories to convert, -1 for all')
 @click.option('--num_workers', default=8, help='number of parallel workers')
 @click.option('--absolute_control', default=True, help='use absolute control')

@@ -258,6 +258,12 @@ def _fit(data: Union[torch.Tensor, np.ndarray, zarr.Array],
     })
     for p in this_params.parameters():
         p.requires_grad_(False)
+    print("scale", scale)
+    print("offset", offset)
+    print('min', input_min)
+    print('max', input_max)
+    print("mean", input_mean)
+    print('std', input_std)
     return this_params
 
 

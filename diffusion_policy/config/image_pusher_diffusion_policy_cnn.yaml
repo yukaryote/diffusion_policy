@@ -119,8 +119,9 @@ task:
     pad_after: 7
     pad_before: 1
     seed: 42
-    val_ratio: 0.02
-    zarr_path: data/pusher/pusher_rod_down.zarr
+    val_ratio: 0.0
+    zarr_path: data/pusher/pusher_down_right.zarr
+    fit_offset: false
   env_runner:
     # call_env_runner: true
     _target_: diffusion_policy.env_runner.pusher_image_runner.PusherImageRunner
@@ -132,7 +133,7 @@ task:
     past_action: false
     test_start_seed: 100000
     train_start_seed: 0
-    push_env_cfg_path: /data/scene-rep/u/iyu/scene-jacobian-discovery/assets/config/dataset/push_env_cfg/pusher_with_rod.yaml
+    push_env_cfg_path: /data/scene-rep/u/iyu/scene-jacobian-discovery/assets/config/dataset/push_env_cfg/pusher_only.yaml
   image_shape:
   - 3
   - 256
